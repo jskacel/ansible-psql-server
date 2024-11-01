@@ -13,10 +13,11 @@ Collections:
      - username: "someuser"
        password: "secretpassword"
        database: "somedatabase"
+       sourceip: "0.0.0.0/0" # this should be changed to IP or range from where you want to connect
     #  - username: "anotheruser"
     #    password: "secretpassword"
     #    database: "anotherdatabase"
-    psql_source_ip: "0.0.0.0/0" # this should be changed to IP or range from where you want to connect
+    #    sourceip: "0.0.0.0/0" # this should be changed to IP or range from where you want to connect
 ```
 
 ## Running it
