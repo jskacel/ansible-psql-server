@@ -22,5 +22,6 @@ Collections:
 
 ## Running it
 ```
+ansible-galaxy collection install -r requirements.yml
 ansible-playbook -i inventory playbook.yml
 ```
