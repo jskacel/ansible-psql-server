@@ -17,10 +17,12 @@ ansible-galaxy collection install -r requirements.yml
        password: "secretpassword"
        database: "somedatabase"
        sourceip: "0.0.0.0/0" # this should be changed to IP or range from where you want to connect
+       extension: "" # in case of Hub, you need to add hstore
     #  - username: "anotheruser"
     #    password: "secretpassword"
     #    database: "anotherdatabase"
     #    sourceip: "0.0.0.0/0" # this should be changed to IP or range from where you want to connect
+    #    extension: "" # in case of Hub, you need to add hstore
 ```
 
 ## Running it

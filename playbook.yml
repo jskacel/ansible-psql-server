@@ -13,10 +13,12 @@
        password: "secretpassword"
        database: "somedatabase"
        sourceip: "0.0.0.0/0" # this should be changed to IP or range from where you want to connect
+       extension: "" # in case of Hub, you need to add hstore
     #  - username: "anotheruser"
     #    password: "secretpassword"
     #    database: "anotherdatabase"
     #    sourceip: "0.0.0.0/0" # this should be changed to IP or range from where you want to connect
+    #    extension: "" # in case of Hub, you need to add hstore
 
   handlers:
     - name: Restart PostgreSQL
@@ -33,6 +35,11 @@
     failed_when: psql_module.rc != 0
     notify:
       - Restart PostgreSQL
+
+  - name: Install postgresql-contrib
+    ansible.builtin.package:
+      name: postgresql-contrib
+      state: present
 
   - name: Database init
     ansible.builtin.command:
@@ -101,4 +108,15 @@
     community.postgresql.postgresql_db:
       name: "{{ item.database }}"
       owner: "{{ item.username }}"
+    loop: "{{ psql_databases }}"
+
+  - name: Enable extensions for database
+    become: true
+    become_user: postgres
+    when: item.extension != ""
+    community.postgresql.postgresql_ext:
+      name: "{{ item.extension }}"
+      db: "{{ item.database }}"
+      state: present
+
     loop: "{{ psql_databases }}"
