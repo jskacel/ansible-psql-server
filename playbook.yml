@@ -1,0 +1,102 @@
+- name: Install PostgreSQL server
+  hosts: all
+  gather_facts: false
+  become: true
+  collections:
+    - community.postgresql
+    - ansible.posix
+
+  vars:
+    psql_version: "15" # or 13
+    psql_databases:
+     - username: "someuser"
+       password: "secretpassword"
+       database: "somedatabase"
+    #  - username: "anotheruser"
+    #    password: "secretpassword"
+    #    database: "anotherdatabase"
+    psql_source_ip: "0.0.0.0/0" # this should be changed to IP or range from where you want to connect
+
+  handlers:
+    - name: Restart PostgreSQL
+      ansible.builtin.systemd:
+        name: postgresql.service
+        state: restarted
+        enabled: true
+  
+  tasks:
+  - name: Install PostgreSQL via module
+    ansible.builtin.command:
+      cmd: dnf module install -y postgresql:{{ psql_version }}/server
+    register: psql_module
+    failed_when: psql_module.rc != 0
+    notify:
+      - Restart PostgreSQL
+
+  - name: Database init
+    ansible.builtin.command:
+      cmd: postgresql-setup --initdb
+      creates: /var/lib/pgsql/data
+    register: init_db
+    failed_when: init_db.rc != 0
+  
+  - name: Install python3-psycopg2
+    ansible.builtin.package:
+      name: python3-psycopg2
+      state: present
+
+  - name: Change encryption in configuration
+    ansible.builtin.lineinfile:
+      path: /var/lib/pgsql/data/postgresql.conf
+      regexp: '^#password_encryption'
+      line: password_encryption = scram-sha-256
+    notify:
+      - Restart PostgreSQL
+  
+  - name: Change listen address
+    ansible.builtin.lineinfile:
+      path: /var/lib/pgsql/data/postgresql.conf
+      regexp: '^#listen_addresses'
+      line: "listen_addresses = '*'"
+    notify:
+      - Restart PostgreSQL
+
+  - name: Allow connection in ph_hba
+    community.postgresql.postgresql_pg_hba:
+      dest: /var/lib/pgsql/data/pg_hba.conf
+      contype: host
+      users: all
+      source: "{{ psql_source_ip }}"
+      databases: all
+      method: scram-sha-256
+      create: true
+    notify:
+      - Restart PostgreSQL
+
+  - ansible.builtin.meta: flush_handlers
+  
+  - name: Allow firewall for 5432/tcp
+    ansible.posix.firewalld:
+      port: 5432/tcp
+      permanent: true
+      state: enabled
+      immediate: true
+  
+  - name: Create a PostgreSQL user
+    become: true
+    become_user: postgres
+    community.postgresql.postgresql_user:
+      name: "{{ item.username }}"
+      password: "{{ item.password }}"
+      role_attr_flags: CREATEDB,CREATEROLE
+    environment:
+      PGOPTIONS: "-c password_encryption=scram-sha-256"
+    loop: "{{ psql_databases }}"
+
+  - name: Create a new database
+    become: true
+    become_user: postgres
+    community.postgresql.postgresql_db:
+      name: "{{ item.database }}"
+      owner: "{{ item.username }}"
+    loop: "{{ psql_databases }}"
