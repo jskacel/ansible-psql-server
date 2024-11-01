@@ -6,6 +6,9 @@ Collections:
 - ansible.posix
 - community.postgresql
 
+```
+ansible-galaxy collection install -r requirements.yml
+```
 ## Variables:
 ```
     psql_version: "15" # or 13
@@ -22,6 +25,5 @@ Collections:
 
 ## Running it
 ```
-ansible-galaxy collection install -r requirements.yml
 ansible-playbook -i inventory playbook.yml
 ```
