@@ -35,6 +35,13 @@
     failed_when: psql_module.rc != 0
     notify:
       - Restart PostgreSQL
+    ignore_errors: true
+
+  - name: Install normal PostreSQL package (module failing)
+    when: psql_module.rc != 0
+    ansible.builtin.package:
+      name: postgresql-server
+      state: present
 
   - name: Install postgresql-contrib
     ansible.builtin.package:
